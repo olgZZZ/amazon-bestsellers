@@ -4,7 +4,7 @@ use serde::Serialize;
 use thirtyfour::{prelude::*, components::{ElementResolver, Component}};
 
 #[derive(Debug, Clone, Component)]
-pub struct ShopItemComponent {
+pub struct CompanyItemComponent {
   base: WebElement,
   #[by(css = "a.a-link-normal span div",  single)]
   title: ElementResolver<WebElement>,
@@ -14,50 +14,50 @@ pub struct ShopItemComponent {
   comments: ElementResolver<WebElement>
 }
 
-impl ShopItemComponent {
-  pub async fn get_title(&self) -> WebDriverResult<String> {
+impl CompanyItemComponent {
+  pub async fn get_company_name(&self) -> WebDriverResult<String> {
     self.title.resolve().await?.text().await
   }
 
-  pub async fn get_link(&self) -> WebDriverResult<String> {
-    let path = self.base.find(By::Css("a.a-link-normal"))
-      .await?.attr("href").await?.unwrap();
-    Ok(format!("https://www.amazon.com{path}"))
+  pub async fn get_company_address(&self) -> WebDriverResult<String> {
+    Ok(self.rating.resolve().await?.inner_html().await?)
   }
-
-  pub async fn get_rating(&self) -> WebDriverResult<String> {
-    Ok(self.rating.resolve().await?.inner_html().await?[..3].to_owned())
-  }
-
-  pub async fn get_comments(&self) -> WebDriverResult<u32> {
-    Ok(self.comments.resolve().await?.text().await?.replace(",", "").parse().unwrap())
+  
+  pub async fn get_company_officers(&self) -> WebDriverResult<String> {
+    Ok(self.rating.resolve().await?.inner_html().await?)
   }
 }
 
 #[derive(Serialize)]
-pub struct ShopItem {
-  title: String,
-  link: String,
-  rating: String,
-  comments: u32
+pub struct CompanyItem {
+  name: String,
+  address: String,
+  officers: OfficerItem,
 }
 
-impl ShopItem {
-  pub async fn from(value: ShopItemComponent) -> Self {
+impl CompanyItem {
+  pub async fn from(value: CompanyItemComponent) -> Self {
     Self {
-      title: value.get_title().await.unwrap(),
-      link: value.get_link().await.unwrap(),
-      rating: value.get_rating().await.unwrap(),
-      comments: value.get_comments().await.unwrap()
+      name: value.get_company_name().await.unwrap(),
+      address: value.get_company_address().await.unwrap(),
+      officers: value.get_company_officers().await.unwrap(),
     }
   }
+}
+
+#[derive(Serialize)]
+pub struct OfficerItem {
+  name: String,
+  role: String,
+  birthday: String,
+  appointed: String,
 }
 
 #[tokio::main]
 async fn main() -> WebDriverResult<()> {
   let caps = DesiredCapabilities::firefox();
   let driver = WebDriver::new("http://127.0.0.1:4444", caps).await?;
-  driver.goto("https://www.amazon.com/gp/bestsellers/fashion/1294868011/").await?;
+  driver.goto("https://find-and-update.company-information.service.gov.uk/advanced-search/get-results?companyNameIncludes=&companyNameExcludes=&registeredOfficeAddress=&incorporationFromDay=01&incorporationFromMonth=01&incorporationFromYear=2005&incorporationToDay=01&incorporationToMonth=01&incorporationToYear=2017&status=active&sicCodes=77110&type=limited-partnership&type=ltd").await?;
 
   for _ in 0..2 {
     driver.execute_async(r#"
@@ -78,9 +78,9 @@ async fn main() -> WebDriverResult<()> {
     .expect("Failed to open output csv file");
   if let Ok(elems) = query.all_required().await {
     for (i, elem) in elems.into_iter().enumerate() {
-      let item = ShopItemComponent::from(elem);
-      println!("{}: Shop item `{}`", i + 1, item.get_title().await?);
-      csv.serialize(ShopItem::from(item).await).unwrap();
+      let item = CompanyItemComponent::from(elem);
+      println!("{}: Shop item `{}`", i + 1, item.get_company_name().await?);
+      csv.serialize(CompanyItem::from(item).await).unwrap();
     }
   } else {
     eprintln!("Failed to find shop items!");
