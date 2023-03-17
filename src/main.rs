@@ -6,52 +6,89 @@ use thirtyfour::{prelude::*, components::{ElementResolver, Component}};
 #[derive(Debug, Clone, Component)]
 pub struct CompanyItemComponent {
   base: WebElement,
-  #[by(css = "a.a-link-normal span div",  single)]
-  title: ElementResolver<WebElement>,
-  #[by(css = "a.a-link-normal i span", single)]
-  rating: ElementResolver<WebElement>,
-  #[by(css = "a.a-link-normal .a-size-small", single)]
-  comments: ElementResolver<WebElement>
+  #[by(class = "govuk-link", single)]
+  name: ElementResolver<WebElement>,
+  // #[by(id = "govuk-list govuk-!-font-size-16", single)]
+  // address: ElementResolver<WebElement>,
+  // #[by(css = "a.a-link-normal .a-size-small", single)]
+  // officers: ElementResolver<WebElement>
 }
 
 impl CompanyItemComponent {
   pub async fn get_company_name(&self) -> WebDriverResult<String> {
-    self.title.resolve().await?.text().await
+    Ok(self.name.resolve().await?.text().await?)
   }
 
-  pub async fn get_company_address(&self) -> WebDriverResult<String> {
-    Ok(self.rating.resolve().await?.inner_html().await?)
-  }
-  
-  pub async fn get_company_officers(&self) -> WebDriverResult<String> {
-    Ok(self.rating.resolve().await?.inner_html().await?)
-  }
+  // pub async fn get_company_address(&self) -> WebDriverResult<String> {
+  //   Ok(self.address.resolve().await?.text().await?)
+  // }
 }
 
 #[derive(Serialize)]
 pub struct CompanyItem {
   name: String,
-  address: String,
-  officers: OfficerItem,
+  // address: String,
+  // officers: OfficerItem,
 }
 
 impl CompanyItem {
   pub async fn from(value: CompanyItemComponent) -> Self {
     Self {
       name: value.get_company_name().await.unwrap(),
-      address: value.get_company_address().await.unwrap(),
-      officers: value.get_company_officers().await.unwrap(),
+      // address: value.get_company_address().await.unwrap(),
     }
   }
 }
 
-#[derive(Serialize)]
-pub struct OfficerItem {
-  name: String,
-  role: String,
-  birthday: String,
-  appointed: String,
-}
+// #[derive(Debug, Clone, Component)]
+// pub struct OfficerItemComponent {
+//   base: WebElement,
+//   #[by(class = "govuk-link", single)]
+//   name: ElementResolver<WebElement>,
+//   #[by(id = "officer-role-1", single)]
+//   role: ElementResolver<WebElement>,
+//   #[by(id = "officer-date-of-birth-1", single)]
+//   birthday: ElementResolver<WebElement>,
+//   #[by(id = "officer-appointed-on-1", single)]
+//   appointed: ElementResolver<WebElement>
+// }
+
+// impl OfficerItemComponent {
+//   pub async fn get_officer_name(&self) -> WebDriverResult<String> {
+//     self.name.resolve().await?.text().await
+//   }
+
+//   pub async fn get_officer_role(&self) -> WebDriverResult<String> {
+//     Ok(self.role.resolve().await?.inner_html().await?)
+//   }
+  
+//   pub async fn get_officer_birthday(&self) -> WebDriverResult<OfficerItem> {
+//     Ok(self.birthday.resolve().await?.inner_html().await?)
+//   }
+
+//   pub async fn get_officer_appointed(&self) -> WebDriverResult<OfficerItem> {
+//     Ok(self.appointed.resolve().await?.inner_html().await?)
+//   }
+// }
+
+// #[derive(Serialize)]
+// pub struct OfficerItem {
+//   name: String,
+//   role: String,
+//   birthday: String,
+//   appointed: String,
+// }
+
+// impl OfficerItem {
+//   pub async fn from(value: CompanyItemComponent) -> Self {
+//     Self {
+//       name: value.get_officer_name().await.unwrap(),
+//       role: value.get_officer_role().await.unwrap(),
+//       birthday: value.get_officer_birthday().await.unwrap(),
+//       appointed: value.get_officer_appointed().await.unwrap(),
+//     }
+//   }
+// }
 
 #[tokio::main]
 async fn main() -> WebDriverResult<()> {
@@ -69,21 +106,21 @@ async fn main() -> WebDriverResult<()> {
     tokio::time::sleep(Duration::from_secs(1)).await;
   }
 
-  driver.query(By::ClassName("a-pagination")).first().await?.scroll_into_view().await?;
+  driver.query(By::ClassName("active")).first().await?.scroll_into_view().await?;
 
 
-  let query = driver.query(By::Id("gridItemRoot"));
+  let query = driver.query(By::ClassName("govuk-table__cell"));
 
-  let mut csv = csv::Writer::from_path("bestsellers.csv")
+  let mut csv = csv::Writer::from_path("companies.csv")
     .expect("Failed to open output csv file");
   if let Ok(elems) = query.all_required().await {
     for (i, elem) in elems.into_iter().enumerate() {
       let item = CompanyItemComponent::from(elem);
-      println!("{}: Shop item `{}`", i + 1, item.get_company_name().await?);
+      println!("{}: Company item `{}`", i + 1, item.get_company_name().await?);
       csv.serialize(CompanyItem::from(item).await).unwrap();
     }
   } else {
-    eprintln!("Failed to find shop items!");
+    eprintln!("Failed to find company items!");
   }
 
   csv.flush().unwrap();
