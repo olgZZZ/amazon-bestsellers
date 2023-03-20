@@ -85,13 +85,13 @@ pub struct OfficerItem {
 }
 
 impl OfficerItem {
-    pub async fn from(value: OfficerItemComponent) -> Self {
-        Self {
-            name: value.get_officer_name().await.unwrap(),
-            role: value.get_officer_role().await.unwrap(),
-            birthday: value.get_officer_birthday().await.unwrap(),
-            appointed: value.get_officer_appointed().await.unwrap(),
-        }
+    pub async fn try_from(value: OfficerItemComponent) -> WebDriverResult<Self> {
+        Ok(Self {
+            name: value.get_officer_name().await?,
+            role: value.get_officer_role().await?,
+            birthday: value.get_officer_birthday().await?,
+            appointed: value.get_officer_appointed().await?,
+        })
     }
 }
 
@@ -129,19 +129,19 @@ async fn main() -> anyhow::Result<()> {
 
     let mut csv =
         csv::Writer::from_path("companies.csv").context("Failed to open output csv file")?;
-    match query.all_required().await {
-        Ok(elements) => {
-            for (index, element) in elements.into_iter().enumerate() {
-                let item = OfficerItemComponent::from(element);
-                println!(
-                    "{}: Officer item `{}`",
-                    index + 1,
-                    item.get_officer_name().await?
-                );
-                csv.serialize(OfficerItem::from(item).await)?;
-            }
-        }
-        _ => anyhow::bail!("Failed to find company items!"),
+
+    let Ok(elements) = query.all_required().await else {
+        anyhow::bail!("Failed to find company items!")
+    };
+
+    for (index, element) in elements.into_iter().enumerate() {
+        let item = OfficerItemComponent::from(element);
+        println!(
+            "{}: Officer item `{}`",
+            index + 1,
+            item.get_officer_name().await?
+        );
+        csv.serialize(OfficerItem::try_from(item).await?)?;
     }
 
     csv.flush()?;
