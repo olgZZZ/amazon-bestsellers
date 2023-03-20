@@ -1,6 +1,6 @@
-use std::time::Duration;
-
+use anyhow::Context;
 use serde::Serialize;
+use std::time::Duration;
 use thirtyfour::{
     components::{Component, ElementResolver},
     prelude::*,
@@ -96,7 +96,7 @@ impl OfficerItem {
 }
 
 #[tokio::main]
-async fn main() -> WebDriverResult<()> {
+async fn main() -> anyhow::Result<()> {
     let caps = DesiredCapabilities::firefox();
     let driver = WebDriver::new("http://127.0.0.1:4444", caps).await?;
     driver
@@ -127,22 +127,24 @@ async fn main() -> WebDriverResult<()> {
 
     let query = driver.query(By::ClassName("govuk-tabs__panel"));
 
-    let mut csv = csv::Writer::from_path("companies.csv").expect("Failed to open output csv file");
-    if let Ok(elems) = query.all_required().await {
-        for (i, elem) in elems.into_iter().enumerate() {
-            let item = OfficerItemComponent::from(elem);
-            println!(
-                "{}: Officer item `{}`",
-                i + 1,
-                item.get_officer_name().await?
-            );
-            csv.serialize(OfficerItem::from(item).await).unwrap();
+    let mut csv =
+        csv::Writer::from_path("companies.csv").context("Failed to open output csv file")?;
+    match query.all_required().await {
+        Ok(elements) => {
+            for (index, element) in elements.into_iter().enumerate() {
+                let item = OfficerItemComponent::from(element);
+                println!(
+                    "{}: Officer item `{}`",
+                    index + 1,
+                    item.get_officer_name().await?
+                );
+                csv.serialize(OfficerItem::from(item).await)?;
+            }
         }
-    } else {
-        eprintln!("Failed to find company items!");
+        _ => anyhow::bail!("Failed to find company items!"),
     }
 
-    csv.flush().unwrap();
+    csv.flush()?;
 
     driver.quit().await?;
     Ok(())
