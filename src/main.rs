@@ -8,7 +8,7 @@ pub struct CompanyItemComponent {
   base: WebElement,
   #[by(class = "govuk-link", single)]
   name: ElementResolver<WebElement>,
-  // #[by(id = "govuk-list govuk-!-font-size-16", single)]
+  // #[by(class = "govuk-list govuk-!-font-size-16", single)]
   // address: ElementResolver<WebElement>,
   // #[by(css = "a.a-link-normal .a-size-small", single)]
   // officers: ElementResolver<WebElement>
@@ -16,7 +16,7 @@ pub struct CompanyItemComponent {
 
 impl CompanyItemComponent {
   pub async fn get_company_name(&self) -> WebDriverResult<String> {
-    Ok(self.name.resolve().await?.text().await?)
+    Ok(self.name.resolve().await?.text().await?.split('\n').next().unwrap().to_string())
   }
 
   // pub async fn get_company_address(&self) -> WebDriverResult<String> {
