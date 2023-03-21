@@ -48,7 +48,7 @@ use thirtyfour::{
 #[derive(Debug, Clone, Component)]
 pub struct OfficerItemComponent {
     base: WebElement,
-    #[by(class = "appointment-1", single)]
+    #[by(id = "officer-name-1", single)]
     name: ElementResolver<WebElement>,
     #[by(id = "officer-role-1", single)]
     role: ElementResolver<WebElement>,
@@ -147,5 +147,6 @@ async fn main() -> anyhow::Result<()> {
     csv.flush()?;
 
     driver.quit().await?;
+
     Ok(())
 }
