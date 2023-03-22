@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
+tesseract = "0.13"
 csv = "1.2.0"
 serde = { version = "1.0.152", features = ["derive"] }
 thirtyfour = "0.31.0"
