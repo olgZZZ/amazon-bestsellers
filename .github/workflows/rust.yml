@@ -24,7 +24,10 @@ jobs:
       run: |
           rustup update --no-self-update stable
           rustup component add rustfmt clippy
-          
+
+    - name: Install system dependencies
+      run: sudo apt-get update; sudo apt-get install libleptonica-dev libtesseract-dev clang 
+
     - name: Build
       run: cargo build
     
