@@ -145,8 +145,18 @@ async fn main() -> anyhow::Result<()> {
     }
 
     csv.flush()?;
-
     driver.quit().await?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn img2text() {
+        assert_eq!(
+            tesseract::ocr("assets/hello.png", "eng").unwrap(),
+            "hello.\n"
+        );
+    }
 }
